@@ -1,4 +1,4 @@
 # raspberry-licenceplate-detection
 
-### non listed dependecies
-- openrlpr
+## Dependencies
+- openalpr https://github.com/openalpr/openalpr

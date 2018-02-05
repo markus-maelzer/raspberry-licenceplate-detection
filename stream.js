@@ -4,7 +4,7 @@ const cmd = require('node-cmd');
 const fs = require('fs');
 
 var cam = new RaspiCam({
-  mode: "photo",
+  mode: "video",
   output: `${__dirname}/image/plate.jpg`,
   encoding: "jpg",
   timeout: 0,
@@ -18,7 +18,7 @@ setInterval(() => {
 cam.start();
 // command[0] -> RASPBERRY
 // command[1] -> windows
-const command = [`alpr -c eu -j image/plate.jpg`, `cd openalpr_64 && alpr -c eu -j samples/aut-5.jpg`];
+const command = [`alpr -c eu -j openalpr_64/samples/waut-1.jpg`, `cd openalpr_64 && alpr -c eu -j samples/aut-5.jpg`];
 
 cam.on('read', (err, timestamp, filename) => {
   getPlate();
@@ -29,12 +29,8 @@ function getPlate() {
     command[0],
     (err, data, stderr) => {
       var parsedData = JSON.parse(data);
-      console.log('Data:', parsedData);
-      if(parsedData.results.length > 0) {
-        console.log('Plate:', parsedData.results[0].plate);
-      } else {
-        request.post({url: ''})
-      }
+      console.log(parsedData.results[0].plate);
+      cam.stop();
     }
   );
 }

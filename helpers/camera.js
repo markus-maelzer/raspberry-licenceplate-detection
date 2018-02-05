@@ -19,12 +19,3 @@ function createCam () {
 module.exports = {
   createCam
 }
-
-
-// const cam = require('./helpers/camera');
-
-// const takePic = cam.createCam();
-
-// takePic((test) => {
-//   console.log(test);
-// })
