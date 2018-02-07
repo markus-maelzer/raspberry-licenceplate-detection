@@ -14,7 +14,7 @@ var cam = new RaspiCam({
   mode: "photo",
   output: `${__dirname}/image/plate.jpg`,
   encoding: "jpg",
-  timeout: 5000,
+  timeout: 3000,
   width: '1920',
   height: 1080,
 });
@@ -27,12 +27,12 @@ function startCam(timeout) {
     cam.start();
   }, timeout)
 }
-startCam(5000);
+startCam(1000);
 
 
 // command[0] -> RASPBERRY
 // command[1] -> windows
-const command = [`alpr -c eu -j image/plate.jpg`, `cd openalpr_64 && alpr -c eu -j samples/aut-5.jpg`];
+const command = [`alpr -c eu -n 3 -j image/plate.jpg`, `cd openalpr_64 && alpr -c eu -j samples/aut-5.jpg`];
 
 cam.on('read', (err, timestamp, filename) => {
   console.log('read');
@@ -47,15 +47,17 @@ function getPlate() {
       console.log('Data:', parsedData);
       if(parsedData.results.length > 0) {
         const { plate } = parsedData.results[0];
+        const { processing_time_ms } = parsedData;
         console.log('Plate:', plate);
         startCam(30000);
-        socket.emit('detection-success', {message: 'Sucess', data: parsedData, plate });
+        socket.emit('log-success', { message: 'Sucess', data: parsedData, plate });
+        socket.emit('show-success', { plate });
       } else {
         console.log('error');
         // request.post({url: ''})
         startCam(10000);
         fs.readFile('image/plate.jpg', (err, image) => {
-          socket.emit('detection-error-image', { message: "No Plate detected", alprData: parsedData, image});
+          socket.emit('log-error', { message: "No Plate detected", alprData: parsedData, image});
         })
       }
     }
