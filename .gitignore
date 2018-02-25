@@ -1,3 +1,4 @@
 *node_modules
 *openalpr_64
 *.jpg
+firebase-admin-sdk.json

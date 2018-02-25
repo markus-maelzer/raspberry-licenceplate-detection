@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.16.2",
+    "firebase-admin": "^5.9.0",
+    "lodash": "^4.17.5",
     "node-cmd": "^3.0.0",
     "path": "^0.12.7",
     "raspicam": "^0.2.14",

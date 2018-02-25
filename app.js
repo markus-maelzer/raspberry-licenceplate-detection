@@ -1,15 +1,11 @@
 const RaspiCam = require('raspicam');
-const request = require('request');
 const cmd = require('node-cmd');
 const fs = require('fs');
+const _ = require('lodash');
 
-const io = require('socket.io-client');
-const socket = io.connect('http://c81ad749.ngrok.io', { reconnection: true});
+const { db, bucket } = require('./firebase');
 
-socket.on('connect', () => {
-  console.log('connected');
-})
-
+// init cam
 var cam = new RaspiCam({
   mode: "photo",
   output: `${__dirname}/image/plate.jpg`,
@@ -21,7 +17,6 @@ var cam = new RaspiCam({
 // max-w: 3280
 // max-h: 2464
 
-
 function startCam(timeout) {
   setTimeout(function () {
     cam.start();
@@ -29,10 +24,8 @@ function startCam(timeout) {
 }
 startCam(1000);
 
-
-// command[0] -> RASPBERRY
-// command[1] -> windows
-const command = [`alpr -c eu -n 3 -j image/plate.jpg`, `cd openalpr_64 && alpr -c eu -j samples/aut-5.jpg`];
+let curPlate = '';
+const command = `alpr -c eu -n 3 -j image/plate.jpg`;
 
 cam.on('read', (err, timestamp, filename) => {
   console.log('read');
@@ -41,25 +34,66 @@ cam.on('read', (err, timestamp, filename) => {
 
 function getPlate() {
   cmd.get(
-    command[0],
+    command,
     (err, data, stderr) => {
-      var parsedData = JSON.parse(data);
+      let parsedData = JSON.parse(data);
       console.log('Data:', parsedData);
       if(parsedData.results.length > 0) {
         const { plate } = parsedData.results[0];
-        const { processing_time_ms } = parsedData;
         console.log('Plate:', plate);
         startCam(30000);
-        socket.emit('log-success', { message: 'Sucess', data: parsedData, plate });
-        socket.emit('show-success', { plate });
+        if(plate !== curPlate) {
+          const newData = {
+            message: 'Success',
+            plate,
+            ...pickFromSuccessData(parsedData)
+          };
+          db.success.push().set(newData);
+          db.plate.set({ plate });
+        }
       } else {
         console.log('error');
-        // request.post({url: ''})
         startCam(10000);
-        fs.readFile('image/plate.jpg', (err, image) => {
-          socket.emit('log-error', { message: "No Plate detected", alprData: parsedData, image});
-        })
+        const imageDestination = `error-images/image-${parsedData.epoch_time}.jpg`
+        const newData = {
+          image: imageDestination,
+          message: 'the plate couldnt be recognized',
+          ...pickFromErrorData(parsedData)
+        }
+        uploadImage(imageDestination);
+        db.error.push().set(newData);
       }
     }
   );
 }
+
+function pickFromSuccessData(data) {
+  let newData = _.pick(data, ['epoch_time', 'processing_time_ms', 'results']);
+  newData.results = _.pick(data.results[0], ['plate', 'confidence', 'processing_time_ms', 'candidates']);
+
+  return newData;
+}
+
+function pickFromErrorData(data) {
+  return _.pick(data, ['epoch_time', 'processing_time_ms']);
+}
+
+function uploadImage(destination) {
+  bucket.upload(`${__dirname}/image/plate.jpg`, {
+    destination: destination,
+    public: true,
+    metadata: { contentType: 'image/jpg' }
+  }).then((data) => {
+    // console.log(`${JSON.stringify(data, undefined, 2)}`);
+    console.log('Succesfully Uploaded');
+  }).catch(e => {console.log(e);});
+}
+
+function checkNightTime() {
+  var d = new Date();
+}
+
+function nightSleep() {
+
+}
+setInterval(nightSleep, 300000);
