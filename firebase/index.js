@@ -18,12 +18,13 @@ const db = admin.database();
 const dbReferences = {
   plate: db.ref('plate'),
   error: db.ref('logs').child('error'),
-  success: db.ref('logs').child('success')
+  success: db.ref('logs').child('success'),
+  settings: db.ref('settings'),
 };
 
 module.exports = {
   bucket,
-  db: dbReferences
+  db: dbReferences,
 }
 
 // bucket.upload(filePath, {

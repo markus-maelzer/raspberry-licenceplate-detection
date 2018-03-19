@@ -2,6 +2,7 @@ const RaspiCam = require('raspicam');
 const cmd = require('node-cmd');
 const fs = require('fs');
 const _ = require('lodash');
+const moment = require('moment');
 
 const { db, bucket } = require('./firebase');
 
@@ -17,12 +18,30 @@ var cam = new RaspiCam({
 // max-w: 3280
 // max-h: 2464
 
+let settings;
+// init settings + start Camera loop
+db.settings.on('value', (snapshot) => {
+  console.log(snapshot.val());
+  settings = snapshot.val();
+  startCam(1000);
+})
+
+var camTimeout;
 function startCam(timeout) {
-  setTimeout(function () {
-    cam.start();
+  clearInterval(camTimeout);
+  if(settings.stopped) {
+    return false;
+  }
+  console.log('cam');
+  camTimeout = setTimeout(function () {
+    if(checkNightTime()) {
+      cam.start();
+    } else {
+      startCam(settings.interval.nighttime || 60000);
+    }
   }, timeout)
 }
-startCam(1000);
+
 
 let curPlate = '';
 const command = `alpr -c eu -n 3 -j image/plate.jpg`;
@@ -41,7 +60,7 @@ function getPlate() {
       if(parsedData.results.length > 0) {
         const { plate } = parsedData.results[0];
         console.log('Plate:', plate);
-        startCam(30000);
+        startCam(settings.interval.success || 60000);
         if(plate !== curPlate) {
           const newData = {
             message: 'Success',
@@ -53,7 +72,7 @@ function getPlate() {
         }
       } else {
         console.log('error');
-        startCam(10000);
+        startCam(settings.interval.error || 30000);
         const imageDestination = `error-images/image-${parsedData.epoch_time}.jpg`
         const newData = {
           image: imageDestination,
@@ -90,10 +109,41 @@ function uploadImage(destination) {
 }
 
 function checkNightTime() {
-  var d = new Date();
-}
+  var now = moment();
+  var wDay = now.weekday();
+  if(wDay === 0) {
+    return false;
+  }
 
+  var h = moment().hour();
+  var m = moment().minute();
+
+  if(wDay >= 2 && wDay <= 4) {
+    if(h >= 17 || h < 8) {
+      return false;
+    }
+  }
+
+  if(wDay === 1) {
+    if(h >= 17 && m >= 30 || h < 8) {
+      return false;
+    }
+  }
+  // check open times di-do
+
+  if(wDay === 5) {
+    if(h >= 17 && m >= 30 || h <= 7 && m >= 30) {
+      return false;
+    }
+  }s
+  if(wDay === 6) {
+    if(h >= 15 || h < 8) {
+      return false;
+    }
+  }
+  return true;
+}
+console.log();
 function nightSleep() {
 
 }
-setInterval(nightSleep, 300000);
