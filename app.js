@@ -34,17 +34,17 @@ function startCam(timeout) {
   }
   console.log('cam');
   camTimeout = setTimeout(function () {
-    if(checkNightTime()) {
+    // if(checkNightTime()) {
       cam.start();
-    } else {
-      startCam(settings.interval.nighttime || 60000);
-    }
-  }, timeout)
+    // } else {
+    //   startCam(settings.interval.nighttime || 60000);
+    // }
+  }, timeout);
 }
 
 
 let curPlate = '';
-const command = `alpr -c eu -n 3 -j image/plate.jpg`;
+const command = `alpr -c eu -n 3 -j ${__dirname}/image/plate.jpg`;
 
 cam.on('read', (err, timestamp, filename) => {
   console.log('read');
@@ -135,7 +135,7 @@ function checkNightTime() {
     if(h >= 17 && m >= 30 || h <= 7 && m >= 30) {
       return false;
     }
-  }s
+  }
   if(wDay === 6) {
     if(h >= 15 || h < 8) {
       return false;
