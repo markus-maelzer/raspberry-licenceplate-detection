@@ -4,6 +4,7 @@ const fs = require('fs');
 const _ = require('lodash');
 const moment = require('moment');
 
+const { checkNightTime } = require('./helpers/check-night-time');
 const { db, bucket } = require('./firebase');
 
 // init cam
@@ -34,11 +35,11 @@ function startCam(timeout) {
   }
   console.log('cam');
   camTimeout = setTimeout(function () {
-    // if(checkNightTime()) {
+    if(checkNightTime()) {
       cam.start();
-    // } else {
-    //   startCam(settings.interval.nighttime || 60000);
-    // }
+    } else {
+      startCam(settings.interval.nighttime || 60000);
+    }
   }, timeout);
 }
 
@@ -106,44 +107,4 @@ function uploadImage(destination) {
     // console.log(`${JSON.stringify(data, undefined, 2)}`);
     console.log('Succesfully Uploaded');
   }).catch(e => {console.log(e);});
-}
-
-function checkNightTime() {
-  var now = moment();
-  var wDay = now.weekday();
-  if(wDay === 0) {
-    return false;
-  }
-
-  var h = moment().hour();
-  var m = moment().minute();
-
-  if(wDay >= 2 && wDay <= 4) {
-    if(h >= 17 || h < 8) {
-      return false;
-    }
-  }
-
-  if(wDay === 1) {
-    if(h >= 17 && m >= 30 || h < 8) {
-      return false;
-    }
-  }
-  // check open times di-do
-
-  if(wDay === 5) {
-    if(h >= 17 && m >= 30 || h <= 7 && m >= 30) {
-      return false;
-    }
-  }
-  if(wDay === 6) {
-    if(h >= 15 || h < 8) {
-      return false;
-    }
-  }
-  return true;
-}
-console.log();
-function nightSleep() {
-
 }
