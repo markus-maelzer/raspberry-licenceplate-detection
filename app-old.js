@@ -1,49 +1,56 @@
+const RaspiCam = require('raspicam');
 const cmd = require('node-cmd');
 const fs = require('fs');
 const _ = require('lodash');
 const moment = require('moment');
 
-const Webcam = require('./cam/cam');
 const { checkNightTime } = require('./helpers/check-night-time');
 const { db, bucket } = require('./firebase');
 
+// init cam
+var cam = new RaspiCam({
+  mode: "photo",
+  output: `${__dirname}/image/plate.jpg`,
+  encoding: "jpg",
+  timeout: 3000,
+  width: '1920',
+  height: 1080,
+});
+// max-w: 3280
+// max-h: 2464
 
 let settings;
 // init settings + start Camera loop
 db.settings.on('value', (snapshot) => {
   console.log(snapshot.val());
   settings = snapshot.val();
-  checkCam(1000);
+  startCam(1000);
 })
 
 var camTimeout;
-function checkCam(timeout) {
+function startCam(timeout) {
   clearInterval(camTimeout);
   if(settings.stopped) {
     return false;
   }
-
+  console.log('cam');
   camTimeout = setTimeout(function () {
     if(checkNightTime()) {
-      startCam
+      cam.start();
     } else {
-      checkCam(settings.interval.nighttime || 60000);
+      startCam(settings.interval.nighttime || 60000);
     }
   }, timeout);
-}
-function startCam() {
-  Webcam.capture('image/plate', (err, data) => {
-    console.log('Path', data);
-    console.log('Error', err);
-    if(data) {
-      getPlate();
-    }
-  })
 }
 
 
 let curPlate = '';
 const command = `alpr -c eu -n 3 -j ${__dirname}/image/plate.jpg`;
+
+cam.on('read', (err, timestamp, filename) => {
+  console.log('read');
+  getPlate();
+})
 
 function getPlate() {
   cmd.get(
@@ -54,7 +61,7 @@ function getPlate() {
       if(parsedData.results.length > 0) {
         const { plate } = parsedData.results[0];
         console.log('Plate:', plate);
-        checkCam(settings.interval.success || 60000);
+        startCam(settings.interval.success || 60000);
         if(plate !== curPlate) {
           const newData = {
             message: 'Success',
@@ -66,7 +73,7 @@ function getPlate() {
         }
       } else {
         console.log('error');
-        checkCam(settings.interval.error || 30000);
+        startCam(settings.interval.error || 30000);
         const imageDestination = `error-images/image-${parsedData.epoch_time}.jpg`
         const newData = {
           image: imageDestination,
