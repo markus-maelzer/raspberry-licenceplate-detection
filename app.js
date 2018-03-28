@@ -1,10 +1,9 @@
 const cmd = require('node-cmd');
 const fs = require('fs');
 const _ = require('lodash');
-const moment = require('moment');
 
 const Webcam = require('./cam/cam');
-const { checkNightTime } = require('./helpers/check-night-time');
+const checkNightTime  = require('./helpers/check-night-time');
 const { db, bucket } = require('./firebase');
 
 

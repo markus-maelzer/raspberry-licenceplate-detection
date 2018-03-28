@@ -1,3 +1,4 @@
+const moment = require('moment');
 function checkNightTime() {
   var now = moment();
   var wDay = now.weekday();
