@@ -1,4 +1,4 @@
-exports = function checkNightTime() {
+function checkNightTime() {
   var now = moment();
   var wDay = now.weekday();
   if(wDay === 0) {
@@ -33,3 +33,5 @@ exports = function checkNightTime() {
   }
   return true;
 }
+
+module.exports = checkNightTime;
