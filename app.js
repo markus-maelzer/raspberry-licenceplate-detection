@@ -25,7 +25,7 @@ function checkCam(timeout) {
 
   camTimeout = setTimeout(function () {
     if(checkNightTime()) {
-      startCam
+      startCam();
     } else {
       checkCam(settings.interval.nighttime || 60000);
     }
