@@ -20,6 +20,7 @@ const dbReferences = {
   error: db.ref('logs').child('error'),
   success: db.ref('logs').child('success'),
   settings: db.ref('settings'),
+  test: db.ref('test'),
 };
 
 module.exports = {
