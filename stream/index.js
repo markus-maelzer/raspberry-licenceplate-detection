@@ -6,14 +6,17 @@ const chokidar = require('chokidar');
 const path = require('path');
 const fs = require('fs');
 
-const imagePath = path.join(__dirname, '../image/plate.jpg');
+const WebcamStream = require('./cam');
+
+const imagePath = path.join(__dirname, '../image/plate_small');
 const watcherOptions = {
   awaitWriteFinish: {
     stabilityThreshold: 1000,
     pollInterval: 100
   }
 };
-const watcher = chokidar.watch(imagePath, watcherOptions)
+console.log(`${imagePath}.jpg`);
+const watcher = chokidar.watch(`${imagePath}.jpg`, watcherOptions)
 
 socket.on('connect', () => {
   console.log('Connected', );
@@ -34,3 +37,9 @@ watcher.on('change', (path, status) => {
     }
   })
 })
+
+setInterval(function () {
+  WebcamStream.capture(imagePath, (err, data) => {
+    console.log(data, err);
+  })
+}, 5000);
