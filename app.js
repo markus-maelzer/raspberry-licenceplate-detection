@@ -15,11 +15,14 @@ db.settings.on('value', (snapshot) => {
   console.log(snapshot.val());
   settings = snapshot.val();
   checkCam(1000);
+  checkStream();
 })
 
 function checkStream() {
   if(settings.stopped && settings.stream) {
     stream.setStream();
+  } else {
+    stream.killStream();
   }
 }
 
@@ -27,12 +30,8 @@ var camTimeout;
 function checkCam(timeout) {
   clearInterval(camTimeout);
   if(settings.stopped) {
-    checkStream();
     return false;
-  } else {
-    stream.killStream();
   }
-
   camTimeout = setTimeout(function () {
     if(checkNightTime()) {
       startCam();
@@ -42,6 +41,7 @@ function checkCam(timeout) {
   }, timeout);
 }
 function startCam() {
+  console.log('asd');
   Webcam.capture('image/plate', (err, data) => {
     console.log('Path', data);
     console.log('Error', err);

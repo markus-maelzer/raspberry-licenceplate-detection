@@ -1,11 +1,4 @@
-const db = require('../firebase');
 const child_process = require('child_process');
-
-// const ffmpeg = child_process.spawn('ffmpeg', [
-//   '-s', '320x240', '-i', '/dev/video0', '-f', 'mpegts',
-//   '-codec:v', 'mpeg1video', '-b', '800k', '-r', '30',
-//   'http://159.89.16.123:8081/supersecret'
-// ])
 
 class HandleStream {
   constructor() {
@@ -33,6 +26,7 @@ class HandleStream {
       this.ffmpeg.kill('SIGINT');
     });
   }
+  
   killStream() {
     if(this.ffmpeg) {
       this.ffmpeg.kill('SIGINT');
