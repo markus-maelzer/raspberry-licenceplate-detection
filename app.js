@@ -6,6 +6,8 @@ const Webcam = require('./cam');
 const checkNightTime  = require('./helpers/check-night-time');
 const { db, bucket } = require('./firebase');
 
+const HandleStream = require('./stream');
+const stream = new HandleStream();
 
 let settings;
 // init settings + start Camera loop
@@ -15,11 +17,20 @@ db.settings.on('value', (snapshot) => {
   checkCam(1000);
 })
 
+function checkStream() {
+  if(settings.stopped && settings.stream) {
+    stream.setStream();
+  }
+}
+
 var camTimeout;
 function checkCam(timeout) {
   clearInterval(camTimeout);
   if(settings.stopped) {
+    checkStream();
     return false;
+  } else {
+    stream.killStream();
   }
 
   camTimeout = setTimeout(function () {

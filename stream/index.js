@@ -1,45 +1,46 @@
-const { db, bucket } = require('../firebase');
-const io = require('socket.io-client');
-const socket = io('http://localhost:3002', {reconnection: true});
+const db = require('../firebase');
+const child_process = require('child_process');
 
-const chokidar = require('chokidar');
-const path = require('path');
-const fs = require('fs');
+// const ffmpeg = child_process.spawn('ffmpeg', [
+//   '-s', '320x240', '-i', '/dev/video0', '-f', 'mpegts',
+//   '-codec:v', 'mpeg1video', '-b', '800k', '-r', '30',
+//   'http://159.89.16.123:8081/supersecret'
+// ])
 
-const WebcamStream = require('./cam');
-
-const imagePath = path.join(__dirname, '../image/plate_small');
-const watcherOptions = {
-  awaitWriteFinish: {
-    stabilityThreshold: 1000,
-    pollInterval: 100
+class HandleStream {
+  constructor() {
+    this.ffmpeg;
+    this.ffmpegArray = [
+      '-s', '320x240', '-i', '/dev/video0', '-f', 'mpegts',
+      '-codec:v', 'mpeg1video', '-b', '800k', '-r', '30',
+      'http://159.89.16.123:8081/supersecret'
+    ];
   }
-};
-console.log(`${imagePath}.jpg`);
-const watcher = chokidar.watch(`${imagePath}.jpg`, watcherOptions)
 
-socket.on('connect', () => {
-  console.log('Connected', );
-})
-socket.on('disconnect', (data) => {
-  console.log(data);
-})
+  setStream() {
+    console.log('set');
+    this.ffmpeg = child_process.spawn('ffmpeg', this.ffmpegArray);
 
-watcher.on('change', (path, status) => {
-  // console.log(path, status);
-  fs.readFile(path, (err, data) => {
-    if(err) {
-      console.log(err);
+    this.ffmpeg.stdin.on('error', (e) => {
+      console.log('FFmpeg STDIN Error', e);
+    });
+
+    this.ffmpeg.stderr.on('data', (data) => {
+      console.log('FFmpeg STDERR:', data.toString());
+    });
+    this.ffmpeg.on('close', (code, signal) => {
+      console.log('FFmpeg child process closed, code ' + code + ', signal ' + signal);
+      this.ffmpeg.kill('SIGINT');
+    });
+  }
+  killStream() {
+    if(this.ffmpeg) {
+      this.ffmpeg.kill('SIGINT');
+      console.log('shutdown stream');
+    } else {
+      console.log('nothing');
     }
-    if(data) {
-      console.log(data);
-      socket.emit('image-stream', data)
-    }
-  })
-})
+  }
+}
 
-setInterval(function () {
-  WebcamStream.capture(imagePath, (err, data) => {
-    console.log(data, err);
-  })
-}, 5000);
+module.exports = HandleStream;
